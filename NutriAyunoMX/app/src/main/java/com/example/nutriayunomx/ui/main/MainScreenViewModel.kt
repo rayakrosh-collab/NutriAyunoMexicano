@@ -11,6 +11,10 @@ import com.example.nutriayunomx.background.FastingWorker
 import com.example.nutriayunomx.data.NutriRepository
 import com.example.nutriayunomx.data.local.Alimento
 import com.example.nutriayunomx.data.local.SesionAyuno
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.firstOrNull
@@ -34,8 +38,24 @@ class MainScreenViewModel(
         .map { it?.protocoloAyunoPreferido ?: "16:8" }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "16:8")
 
-    val foods: StateFlow<List<Alimento>> = repository.getAllAlimentos()
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val searchResults: StateFlow<List<Alimento>> = _searchQuery
+        .flatMapLatest { query ->
+            if (query.isBlank()) {
+                repository.getAllAlimentos()
+            } else {
+                repository.buscarAlimentos(query)
+            }
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun onSearchQueryChanged(newQuery: String) {
+        _searchQuery.value = newQuery
+    }
+
 
     fun iniciarAyuno(horasObjetivo: Int, isTesting: Boolean = false) {
         viewModelScope.launch {
