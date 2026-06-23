@@ -35,6 +35,8 @@ import com.example.nutriayunomx.data.DefaultNutriRepository
 import com.example.nutriayunomx.data.local.AppDatabase
 import com.example.nutriayunomx.data.local.SesionAyuno
 import com.example.nutriayunomx.data.local.Alimento
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.nativeCanvas
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -131,6 +133,9 @@ fun FastingTabContent(
     val todayTotalProtein by viewModel.todayTotalProtein.collectAsStateWithLifecycle()
     val todayFoodLogs by viewModel.todayFoodLogs.collectAsStateWithLifecycle()
     val perfil by viewModel.perfilAjustes.collectAsStateWithLifecycle()
+    val fastingStreak by viewModel.fastingStreak.collectAsStateWithLifecycle()
+    val weeklyProteinData by viewModel.weeklyProteinData.collectAsStateWithLifecycle()
+    val weeklyFastingData by viewModel.weeklyFastingData.collectAsStateWithLifecycle()
 
     val proteinGoal = perfil?.metaProteinaDiaria ?: 80.0
     val progress = if (proteinGoal > 0.0) (todayTotalProtein / proteinGoal).toFloat().coerceIn(0f, 1f) else 0f
@@ -170,6 +175,11 @@ fun FastingTabContent(
             }
         }
 
+        // Racha Activa (Fase 5)
+        item {
+            FastingStreakCard(streak = fastingStreak)
+        }
+
         // Panel de Proteína del Día (Fase 4)
         item {
             DailyProteinCard(
@@ -178,6 +188,24 @@ fun FastingTabContent(
                 progress = progress,
                 todayFoodLogs = todayFoodLogs,
                 onDeleteLog = { id -> viewModel.eliminarComida(id) }
+            )
+        }
+
+        // Gráfica de Proteína Semanal (Fase 5)
+        item {
+            WeeklyProteinChart(
+                weeklyProteinData = weeklyProteinData,
+                proteinGoal = proteinGoal
+            )
+        }
+
+        // Gráfica de Ayuno Semanal (Fase 5)
+        item {
+            val targetFastingHours = preferredProtocol.split(":").firstOrNull()?.toDoubleOrNull() ?: 16.0
+            WeeklyFastingChart(
+                weeklyFastingData = weeklyFastingData,
+                weeklyProteinDates = weeklyProteinData,
+                targetHours = targetFastingHours
             )
         }
 
@@ -1380,11 +1408,346 @@ fun formatMillis(millis: Long): String {
 }
 
 fun formatTime(millis: Long): String {
-    val formatter = SimpleDateFormat("hh:mm a", Locale.getDefault())
+    val formatter = SimpleDateFormat("hh:mm a", Locale("es", "MX"))
     return formatter.format(Date(millis))
 }
 
 fun formatDate(millis: Long): String {
-    val formatter = SimpleDateFormat("dd MMM, yyyy", Locale.getDefault())
+    val formatter = SimpleDateFormat("dd MMM, yyyy", Locale("es", "MX"))
     return formatter.format(Date(millis))
 }
+
+@Composable
+fun FastingStreakCard(
+    streak: Int,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (streak > 0) {
+                            androidx.compose.ui.graphics.Brush.linearGradient(
+                                colors = listOf(Color(0xFFFF5722), Color(0xFFFF9800))
+                            )
+                        } else {
+                            androidx.compose.ui.graphics.Brush.linearGradient(
+                                colors = listOf(Color(0xFFB0BEC5), Color(0xFFCFD8DC))
+                            )
+                        }
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "🔥",
+                    fontSize = 28.sp
+                )
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Racha Activa",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = if (streak == 1) "1 día completando ayuno" else "$streak días consecutivos de ayuno",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Text(
+                text = "$streak",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Black,
+                color = if (streak > 0) Color(0xFFFF5722) else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+fun getDayOfWeekLabel(dateStr: String): String {
+    try {
+        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale("es", "MX"))
+        val date = sdf.parse(dateStr) ?: return ""
+        val dayOfWeek = java.text.SimpleDateFormat("E", java.util.Locale("es", "MX")).format(date)
+        return dayOfWeek.take(2).uppercase().replace("MÍ", "MI").replace("SÁ", "SA").replace("DO", "DO")
+    } catch (e: Exception) {
+        return ""
+    }
+}
+
+@Composable
+fun WeeklyProteinChart(
+    weeklyProteinData: List<com.example.nutriayunomx.data.local.FechaProteina>,
+    proteinGoal: Double,
+    modifier: Modifier = Modifier
+) {
+    val maxVal = maxOf(proteinGoal, weeklyProteinData.maxOfOrNull { it.totalProteina } ?: 0.0)
+    val displayMax = if (maxVal > 0.0) maxVal * 1.2 else 100.0
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Column {
+                Text(
+                    text = "Proteína Semanal 📊",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Consumo diario de los últimos 7 días",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+            ) {
+                val primaryColor = MaterialTheme.colorScheme.primary
+                val greenColor = Color(0xFF2E7D32)
+                val textColor = MaterialTheme.colorScheme.onSurfaceVariant
+                val gridColor = MaterialTheme.colorScheme.outlineVariant
+
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val width = size.width
+                    val height = size.height
+                    val bottomPadding = 30.dp.toPx()
+                    val chartHeight = height - bottomPadding
+                    val leftPadding = 45.dp.toPx()
+                    val chartWidth = width - leftPadding
+                    val barCount = weeklyProteinData.size
+                    val spacing = chartWidth / barCount
+                    val barWidth = 24.dp.toPx()
+
+                    // Draw grid line for Goal
+                    val goalY = chartHeight - ((proteinGoal / displayMax) * chartHeight).toFloat()
+                    drawLine(
+                        color = primaryColor.copy(alpha = 0.5f),
+                        start = androidx.compose.ui.geometry.Offset(leftPadding, goalY),
+                        end = androidx.compose.ui.geometry.Offset(width, goalY),
+                        strokeWidth = 2.dp.toPx(),
+                        pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+                    )
+
+                    // Draw goal text
+                    drawContext.canvas.nativeCanvas.drawText(
+                        "${proteinGoal.toInt()}g meta",
+                        10.dp.toPx(),
+                        goalY + 4.dp.toPx(),
+                        android.graphics.Paint().apply {
+                            color = primaryColor.toArgb()
+                            textSize = 10.sp.toPx()
+                            typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+                        }
+                    )
+
+                    // Draw baseline
+                    drawLine(
+                        color = gridColor,
+                        start = androidx.compose.ui.geometry.Offset(leftPadding, chartHeight),
+                        end = androidx.compose.ui.geometry.Offset(width, chartHeight),
+                        strokeWidth = 1.dp.toPx()
+                    )
+
+                    // Draw columns
+                    weeklyProteinData.forEachIndexed { index, data ->
+                        val barHeight = ((data.totalProteina / displayMax) * chartHeight).toFloat()
+                        val x = leftPadding + (index * spacing) + (spacing - barWidth) / 2
+                        val y = chartHeight - barHeight
+
+                        val isGoalMet = data.totalProteina >= proteinGoal
+                        val barColor = if (isGoalMet) greenColor else primaryColor.copy(alpha = 0.7f)
+
+                        drawRoundRect(
+                            color = barColor,
+                            topLeft = androidx.compose.ui.geometry.Offset(x, y),
+                            size = androidx.compose.ui.geometry.Size(barWidth, barHeight.coerceAtLeast(4.dp.toPx())),
+                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(6.dp.toPx(), 6.dp.toPx())
+                        )
+
+                        val label = getDayOfWeekLabel(data.fecha)
+                        drawContext.canvas.nativeCanvas.drawText(
+                            label,
+                            x + barWidth / 2,
+                            height - 8.dp.toPx(),
+                            android.graphics.Paint().apply {
+                                color = textColor.toArgb()
+                                textSize = 10.sp.toPx()
+                                textAlign = android.graphics.Paint.Align.CENTER
+                            }
+                        )
+
+                        if (data.totalProteina > 0) {
+                            val valueText = String.format(Locale.getDefault(), "%.0f", data.totalProteina)
+                            drawContext.canvas.nativeCanvas.drawText(
+                                valueText,
+                                x + barWidth / 2,
+                                (y - 6.dp.toPx()).coerceAtLeast(12.dp.toPx()),
+                                android.graphics.Paint().apply {
+                                    color = barColor.toArgb()
+                                    textSize = 9.sp.toPx()
+                                    textAlign = android.graphics.Paint.Align.CENTER
+                                    typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun WeeklyFastingChart(
+    weeklyFastingData: List<Double>,
+    weeklyProteinDates: List<com.example.nutriayunomx.data.local.FechaProteina>,
+    targetHours: Double,
+    modifier: Modifier = Modifier
+) {
+    val maxVal = maxOf(targetHours, weeklyFastingData.maxOrNull() ?: 0.0)
+    val displayMax = if (maxVal > 0.0) maxVal * 1.2 else 24.0
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Column {
+                Text(
+                    text = "Horas de Ayuno ⏱️",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Ayunos completados en los últimos 7 días",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+            ) {
+                val purpleColor = Color(0xFF673AB7)
+                val lightPurpleColor = Color(0xFF9C27B0)
+                val textColor = MaterialTheme.colorScheme.onSurfaceVariant
+                val gridColor = MaterialTheme.colorScheme.outlineVariant
+
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val width = size.width
+                    val height = size.height
+                    val bottomPadding = 30.dp.toPx()
+                    val chartHeight = height - bottomPadding
+                    val leftPadding = 45.dp.toPx()
+                    val chartWidth = width - leftPadding
+                    val barCount = weeklyFastingData.size
+                    val spacing = chartWidth / barCount
+                    val barWidth = 24.dp.toPx()
+
+                    val goalY = chartHeight - ((targetHours / displayMax) * chartHeight).toFloat()
+                    drawLine(
+                        color = purpleColor.copy(alpha = 0.5f),
+                        start = androidx.compose.ui.geometry.Offset(leftPadding, goalY),
+                        end = androidx.compose.ui.geometry.Offset(width, goalY),
+                        strokeWidth = 2.dp.toPx(),
+                        pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+                    )
+
+                    drawContext.canvas.nativeCanvas.drawText(
+                        "${targetHours.toInt()}h meta",
+                        10.dp.toPx(),
+                        goalY + 4.dp.toPx(),
+                        android.graphics.Paint().apply {
+                            color = purpleColor.toArgb()
+                            textSize = 10.sp.toPx()
+                            typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+                        }
+                    )
+
+                    drawLine(
+                        color = gridColor,
+                        start = androidx.compose.ui.geometry.Offset(leftPadding, chartHeight),
+                        end = androidx.compose.ui.geometry.Offset(width, chartHeight),
+                        strokeWidth = 1.dp.toPx()
+                    )
+
+                    weeklyFastingData.forEachIndexed { index, hours ->
+                        val barHeight = ((hours / displayMax) * chartHeight).toFloat()
+                        val x = leftPadding + (index * spacing) + (spacing - barWidth) / 2
+                        val y = chartHeight - barHeight
+
+                        val barColor = if (hours >= targetHours) lightPurpleColor else purpleColor.copy(alpha = 0.7f)
+
+                        drawRoundRect(
+                            color = barColor,
+                            topLeft = androidx.compose.ui.geometry.Offset(x, y),
+                            size = androidx.compose.ui.geometry.Size(barWidth, barHeight.coerceAtLeast(4.dp.toPx())),
+                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(6.dp.toPx(), 6.dp.toPx())
+                        )
+
+                        val dateStr = weeklyProteinDates.getOrNull(index)?.fecha ?: ""
+                        val label = getDayOfWeekLabel(dateStr)
+                        drawContext.canvas.nativeCanvas.drawText(
+                            label,
+                            x + barWidth / 2,
+                            height - 8.dp.toPx(),
+                            android.graphics.Paint().apply {
+                                color = textColor.toArgb()
+                                textSize = 10.sp.toPx()
+                                textAlign = android.graphics.Paint.Align.CENTER
+                            }
+                        )
+
+                        if (hours > 0) {
+                            val valueText = String.format(Locale.getDefault(), "%.1fh", hours)
+                            drawContext.canvas.nativeCanvas.drawText(
+                                valueText,
+                                x + barWidth / 2,
+                                (y - 6.dp.toPx()).coerceAtLeast(12.dp.toPx()),
+                                android.graphics.Paint().apply {
+                                    color = barColor.toArgb()
+                                    textSize = 9.sp.toPx()
+                                    textAlign = android.graphics.Paint.Align.CENTER
+                                    typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+

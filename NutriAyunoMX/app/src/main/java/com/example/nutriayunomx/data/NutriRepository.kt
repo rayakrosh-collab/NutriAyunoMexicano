@@ -8,6 +8,7 @@ import com.example.nutriayunomx.data.local.PerfilAjustesDao
 import com.example.nutriayunomx.data.local.RegistroComida
 import com.example.nutriayunomx.data.local.RegistroComidaDao
 import com.example.nutriayunomx.data.local.RegistroComidaConAlimento
+import com.example.nutriayunomx.data.local.FechaProteina
 import com.example.nutriayunomx.data.local.SesionAyuno
 import com.example.nutriayunomx.data.local.SesionAyunoDao
 import kotlinx.coroutines.flow.Flow
@@ -25,6 +26,7 @@ interface NutriRepository {
     suspend fun insertRegistro(registro: RegistroComida): Long
     suspend fun deleteRegistroPorId(id: Long)
     fun getProteinaTotalPorFecha(fecha: String): Flow<Double?>
+    fun getProteinaDiariaPorRango(fechaInicio: String): Flow<List<FechaProteina>>
 
     // Sesiones Ayuno
     fun getHistorialAyunos(): Flow<List<SesionAyuno>>
@@ -64,6 +66,8 @@ class DefaultNutriRepository(
         registroComidaDao.deleteRegistroPorId(id)
     override fun getProteinaTotalPorFecha(fecha: String): Flow<Double?> =
         registroComidaDao.getProteinaTotalPorFecha(fecha)
+    override fun getProteinaDiariaPorRango(fechaInicio: String): Flow<List<FechaProteina>> =
+        registroComidaDao.getProteinaDiariaPorRango(fechaInicio)
 
     // Sesiones Ayuno
     override fun getHistorialAyunos(): Flow<List<SesionAyuno>> = sesionAyunoDao.getHistorialAyunos()

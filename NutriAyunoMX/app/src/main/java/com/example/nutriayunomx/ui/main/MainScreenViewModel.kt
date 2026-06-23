@@ -51,6 +51,39 @@ class MainScreenViewModel(
         .map { it ?: 0.0 }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
+    val weeklyProteinData: StateFlow<List<com.example.nutriayunomx.data.local.FechaProteina>> = repository.getProteinaDiariaPorRango(getDaysAgoDateString(6))
+        .map { dbList ->
+            val map = dbList.associateBy { it.fecha }
+            (0..6).map { i ->
+                val dateStr = getDaysAgoDateString(6 - i)
+                map[dateStr] ?: com.example.nutriayunomx.data.local.FechaProteina(dateStr, 0.0)
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val weeklyFastingData: StateFlow<List<Double>> = repository.getHistorialAyunos()
+        .map { list ->
+            val completedSessions = list.filter { it.completada }
+            val map = completedSessions.groupBy {
+                val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                sdf.format(java.util.Date(it.inicio))
+            }
+            (0..6).map { i ->
+                val dateStr = getDaysAgoDateString(6 - i)
+                val sessionsForDay = map[dateStr] ?: emptyList()
+                sessionsForDay.sumOf { session ->
+                    val finTime = session.fin ?: session.inicio
+                    val durationMillis = finTime - session.inicio
+                    durationMillis / (3600 * 1000.0)
+                }
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), List(7) { 0.0 })
+
+    val fastingStreak: StateFlow<Int> = repository.getHistorialAyunos()
+        .map { list -> calcularRacha(list) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
@@ -160,5 +193,40 @@ class MainScreenViewModel(
         viewModelScope.launch {
             repository.deleteSesionPorId(id)
         }
+    }
+
+    private fun getDaysAgoDateString(daysAgo: Int): String {
+        val cal = java.util.Calendar.getInstance()
+        cal.add(java.util.Calendar.DAY_OF_YEAR, -daysAgo)
+        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+        return sdf.format(cal.time)
+    }
+
+    private fun calcularRacha(history: List<SesionAyuno>): Int {
+        val completedDates = history
+            .filter { it.completada }
+            .map { 
+                val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                sdf.format(java.util.Date(it.inicio))
+            }
+            .toSet()
+
+        if (completedDates.isEmpty()) return 0
+
+        val todayStr = getDaysAgoDateString(0)
+        val yesterdayStr = getDaysAgoDateString(1)
+
+        var currentStreak = 0
+        var checkDate = if (completedDates.contains(todayStr)) todayStr else if (completedDates.contains(yesterdayStr)) yesterdayStr else null
+
+        if (checkDate != null) {
+            var daysAgo = if (checkDate == todayStr) 0 else 1
+            while (completedDates.contains(getDaysAgoDateString(daysAgo))) {
+                currentStreak++
+                daysAgo++
+            }
+        }
+
+        return currentStreak
     }
 }

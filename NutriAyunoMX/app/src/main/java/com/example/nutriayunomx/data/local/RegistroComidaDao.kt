@@ -29,4 +29,13 @@ interface RegistroComidaDao {
 
     @Query("SELECT SUM(proteinaCalculadaG) FROM registro_comida WHERE fecha = :fecha")
     fun getProteinaTotalPorFecha(fecha: String): Flow<Double?>
+
+    @Query("""
+        SELECT fecha, SUM(proteinaCalculadaG) AS totalProteina 
+        FROM registro_comida 
+        WHERE fecha >= :fechaInicio 
+        GROUP BY fecha 
+        ORDER BY fecha ASC
+    """)
+    fun getProteinaDiariaPorRango(fechaInicio: String): Flow<List<FechaProteina>>
 }
