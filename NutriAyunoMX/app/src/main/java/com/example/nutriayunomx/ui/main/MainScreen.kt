@@ -1,10 +1,12 @@
 package com.example.nutriayunomx.ui.main
 
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -16,8 +18,9 @@ import com.example.nutriayunomx.theme.NutriAyunoMXTheme
 fun MainScreen(
   onItemClick: (NavKey) -> Unit,
   modifier: Modifier = Modifier,
-  viewModel: MainScreenViewModel = viewModel { MainScreenViewModel(DefaultDataRepository()) },
 ) {
+  val context = LocalContext.current
+  val viewModel: MainScreenViewModel = viewModel { MainScreenViewModel(DefaultDataRepository(context)) }
   val state by viewModel.uiState.collectAsStateWithLifecycle()
   when (state) {
     MainScreenUiState.Loading -> {
@@ -34,12 +37,14 @@ fun MainScreen(
 
 @Composable
 internal fun MainScreen(data: List<String>, modifier: Modifier = Modifier) {
-  Column(modifier) { data.forEach { Greeting(it) } }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-  Text(text = "¡Hola $name!", modifier = modifier)
+  LazyColumn(modifier = modifier) {
+    item {
+      Text(text = "¡Alimentos Mexicanos cargados (${data.size})!")
+    }
+    items(data) { foodItem ->
+      Text(text = foodItem)
+    }
+  }
 }
 
 @Preview(showBackground = true)
