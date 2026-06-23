@@ -90,4 +90,7 @@ dependencies {
 
   // Kotlinx Serialization
   implementation(libs.kotlinx.serialization.json)
+
+  // WorkManager
+  implementation(libs.androidx.work.runtime)
 }
