@@ -8,6 +8,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,6 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,7 +35,6 @@ import com.example.nutriayunomx.data.DefaultNutriRepository
 import com.example.nutriayunomx.data.local.AppDatabase
 import com.example.nutriayunomx.data.local.SesionAyuno
 import com.example.nutriayunomx.data.local.Alimento
-import androidx.compose.runtime.saveable.rememberSaveable
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -96,6 +97,12 @@ fun MainScreen(
                     icon = { Text("🌮", fontSize = 20.sp) },
                     label = { Text("Alimentos") }
                 )
+                NavigationBarItem(
+                    selected = selectedTab == 2,
+                    onClick = { selectedTab = 2 },
+                    icon = { Text("⚙️", fontSize = 20.sp) },
+                    label = { Text("Ajustes") }
+                )
             }
         }
     ) { innerPadding ->
@@ -107,6 +114,7 @@ fun MainScreen(
             when (selectedTab) {
                 0 -> FastingTabContent(viewModel = viewModel)
                 1 -> FoodSearchTabContent(viewModel = viewModel)
+                2 -> SettingsTabContent(viewModel = viewModel)
             }
         }
     }
@@ -120,6 +128,12 @@ fun FastingTabContent(
     val activeSession by viewModel.activeSession.collectAsStateWithLifecycle()
     val history by viewModel.history.collectAsStateWithLifecycle()
     val preferredProtocol by viewModel.preferredProtocol.collectAsStateWithLifecycle()
+    val todayTotalProtein by viewModel.todayTotalProtein.collectAsStateWithLifecycle()
+    val todayFoodLogs by viewModel.todayFoodLogs.collectAsStateWithLifecycle()
+    val perfil by viewModel.perfilAjustes.collectAsStateWithLifecycle()
+
+    val proteinGoal = perfil?.metaProteinaDiaria ?: 80.0
+    val progress = if (proteinGoal > 0.0) (todayTotalProtein / proteinGoal).toFloat().coerceIn(0f, 1f) else 0f
 
     LazyColumn(
         modifier = modifier
@@ -156,6 +170,17 @@ fun FastingTabContent(
             }
         }
 
+        // Panel de Proteína del Día (Fase 4)
+        item {
+            DailyProteinCard(
+                todayTotalProtein = todayTotalProtein,
+                proteinGoal = proteinGoal,
+                progress = progress,
+                todayFoodLogs = todayFoodLogs,
+                onDeleteLog = { id -> viewModel.eliminarComida(id) }
+            )
+        }
+
         // Sección del Historial
         item {
             Text(
@@ -187,6 +212,179 @@ fun FastingTabContent(
                     session = session,
                     onDelete = { viewModel.eliminarAyuno(session.id) }
                 )
+            }
+        }
+    }
+}
+
+@Composable
+fun DailyProteinCard(
+    todayTotalProtein: Double,
+    proteinGoal: Double,
+    progress: Float,
+    todayFoodLogs: List<com.example.nutriayunomx.data.local.RegistroComidaConAlimento>,
+    onDeleteLog: (Long) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Cabecera con progreso numérico
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Column {
+                    Text(
+                        text = "Proteína de Hoy 🥚",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Progreso diario contra tu meta",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(
+                            text = String.format(Locale.getDefault(), "%.1f", todayTotalProtein),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = " / ${proteinGoal.toInt()}g",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Text(
+                        text = "${(progress * 100).toInt()}% completado",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = if (progress >= 1f) Color(0xFF2E7D32) else MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
+            // Barra de progreso lineal
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(10.dp)
+                    .clip(RoundedCornerShape(5.dp)),
+                color = if (progress >= 1f) Color(0xFF2E7D32) else MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+
+            // Diario de comidas de hoy
+            Text(
+                text = "Diario de Alimentos",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold
+            )
+
+            if (todayFoodLogs.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                        .padding(20.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No has registrado alimentos hoy. Busca alimentos en la pestaña de al lado para registrar tu consumo.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    todayFoodLogs.forEach { log ->
+                        FoodLogItemRow(log = log, onDelete = { onDeleteLog(log.id) })
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun FoodLogItemRow(
+    log: com.example.nutriayunomx.data.local.RegistroComidaConAlimento,
+    onDelete: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f))
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = log.alimentoNombre,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Momento
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = log.momento,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                val portionText = if (log.cantidadPorciones == 1.0) "1 porción" else "${log.cantidadPorciones} porciones"
+                Text(
+                    text = "$portionText (${log.porcionDescripcion})",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = "${log.proteinaCalculadaG}g",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Black,
+                color = MaterialTheme.colorScheme.primary
+            )
+            IconButton(
+                onClick = onDelete,
+                modifier = Modifier.size(24.dp)
+            ) {
+                Text("🗑️", fontSize = 14.sp)
             }
         }
     }
@@ -300,8 +498,224 @@ fun FoodSearchTabContent(
     if (selectedAlimento != null) {
         AlimentoDetailDialog(
             alimento = selectedAlimento!!,
-            onDismiss = { selectedAlimento = null }
+            onDismiss = { selectedAlimento = null },
+            onRegister = { quantity, momento ->
+                viewModel.registrarComida(
+                    alimentoId = selectedAlimento!!.id,
+                    cantidadPorciones = quantity,
+                    proteinaPorPorcion = selectedAlimento!!.proteinaG,
+                    momento = momento
+                )
+                selectedAlimento = null
+            }
         )
+    }
+}
+
+@Composable
+fun SettingsTabContent(
+    viewModel: MainScreenViewModel,
+    modifier: Modifier = Modifier
+) {
+    val perfil by viewModel.perfilAjustes.collectAsStateWithLifecycle()
+    
+    var pesoInput by remember { mutableStateOf("") }
+    var metaProteina by remember { mutableFloatStateOf(80f) }
+    var selectedProtocol by remember { mutableStateOf("16:8") }
+    var showSuccessToast by remember { mutableStateOf(false) }
+
+    LaunchedEffect(perfil) {
+        perfil?.let {
+            pesoInput = it.pesoKg?.toString() ?: ""
+            metaProteina = it.metaProteinaDiaria.toFloat()
+            selectedProtocol = it.protocoloAyunoPreferido
+        }
+    }
+
+    LaunchedEffect(showSuccessToast) {
+        if (showSuccessToast) {
+            delay(2000L)
+            showSuccessToast = false
+        }
+    }
+
+    LazyColumn(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        contentPadding = PaddingValues(top = 8.dp, bottom = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
+    ) {
+        item {
+            Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                Text(
+                    text = "Ajustes de Perfil ⚙️",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "Personaliza tus metas diarias de proteína y tus preferencias de ayuno.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        // Éxito de guardado
+        item {
+            AnimatedVisibility(visible = showSuccessToast) {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text("✅", fontSize = 18.sp)
+                        Text(
+                            text = "Ajustes guardados correctamente.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF2E7D32)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Peso Corporal
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Peso Corporal (kg)",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    OutlinedTextField(
+                        value = pesoInput,
+                        onValueChange = { pesoInput = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("Ej. 75") },
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary
+                        )
+                    )
+                }
+            }
+        }
+
+        // Meta Proteína
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Meta de Proteína Diaria",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "${metaProteina.toInt()}g",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Text(
+                        text = "Fija tu objetivo de consumo de proteína diario.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Slider(
+                        value = metaProteina,
+                        onValueChange = { metaProteina = it },
+                        valueRange = 40f..200f,
+                        steps = 160
+                    )
+                }
+            }
+        }
+
+        // Protocolo Preferido
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Protocolo de Ayuno Preferido",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf("16:8", "18:6", "20:4").forEach { protocol ->
+                            val isSelected = selectedProtocol == protocol
+                            Button(
+                                onClick = { selectedProtocol = protocol },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                    contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(protocol, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Botón Guardar
+        item {
+            Button(
+                onClick = {
+                    val pesoDouble = pesoInput.toDoubleOrNull()
+                    viewModel.guardarAjustesPerfil(pesoDouble, metaProteina.toDouble(), selectedProtocol)
+                    showSuccessToast = true
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("💾  Guardar Ajustes", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            }
+        }
     }
 }
 
@@ -394,16 +808,30 @@ fun AlimentoItemCard(
 @Composable
 fun AlimentoDetailDialog(
     alimento: Alimento,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onRegister: (Double, String) -> Unit
 ) {
+    var quantity by remember { mutableStateOf(1.0) }
+    var selectedMomento by remember { mutableStateOf("Comida") }
+    val momentos = listOf("Desayuno", "Comida", "Cena", "Colación")
+
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
             Button(
-                onClick = onDismiss,
+                onClick = {
+                    onRegister(quantity, selectedMomento)
+                },
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Cerrar", fontWeight = FontWeight.Bold)
+                Text("Registrar comida", fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss
+            ) {
+                Text("Cancelar", fontWeight = FontWeight.Bold)
             }
         },
         title = {
@@ -459,13 +887,77 @@ fun AlimentoDetailDialog(
                     )
                 }
 
-                // Grid de Macros
+                // Selección de Porciones
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Cantidad de Porciones",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                            .padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        IconButton(onClick = { if (quantity > 0.5) quantity -= 0.5 }) {
+                            Text("➖", fontSize = 16.sp)
+                        }
+                        Text(
+                            text = String.format(Locale.getDefault(), "%.1f porciones", quantity),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        IconButton(onClick = { quantity += 0.5 }) {
+                            Text("➕", fontSize = 16.sp)
+                        }
+                    }
+                }
+
+                // Selección de Momento de Comida
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Momento del Día",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        momentos.forEach { momento ->
+                            val isSelected = selectedMomento == momento
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
+                                    .clickable { selectedMomento = momento }
+                                    .padding(vertical = 6.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = momento,
+                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Grid de Macros calculados dinámicamente
+                val factor = quantity
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "Información Nutricional (por porción)",
+                        text = "Información Nutricional (calculado)",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
@@ -476,14 +968,14 @@ fun AlimentoDetailDialog(
                     ) {
                         MacroCard(
                             label = "Proteína",
-                            value = "${alimento.proteinaG}g",
+                            value = String.format(Locale.getDefault(), "%.1fg", alimento.proteinaG * factor),
                             color = MaterialTheme.colorScheme.primaryContainer,
                             textColor = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.weight(1f)
                         )
                         MacroCard(
                             label = "Calorías",
-                            value = alimento.caloriasKcal?.let { "${it.toInt()} kcal" } ?: "-",
+                            value = alimento.caloriasKcal?.let { String.format(Locale.getDefault(), "%d kcal", (it * factor).toInt()) } ?: "-",
                             color = MaterialTheme.colorScheme.secondaryContainer,
                             textColor = MaterialTheme.colorScheme.onSecondaryContainer,
                             modifier = Modifier.weight(1f)
@@ -496,14 +988,14 @@ fun AlimentoDetailDialog(
                     ) {
                         MacroCard(
                             label = "Carbohidratos",
-                            value = alimento.carbohidratosG?.let { "${it}g" } ?: "-",
+                            value = alimento.carbohidratosG?.let { String.format(Locale.getDefault(), "%.1fg", it * factor) } ?: "-",
                             color = MaterialTheme.colorScheme.tertiaryContainer,
                             textColor = MaterialTheme.colorScheme.onTertiaryContainer,
                             modifier = Modifier.weight(1f)
                         )
                         MacroCard(
                             label = "Grasas",
-                            value = alimento.grasasG?.let { "${it}g" } ?: "-",
+                            value = alimento.grasasG?.let { String.format(Locale.getDefault(), "%.1fg", it * factor) } ?: "-",
                             color = MaterialTheme.colorScheme.surfaceVariant,
                             textColor = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.weight(1f)

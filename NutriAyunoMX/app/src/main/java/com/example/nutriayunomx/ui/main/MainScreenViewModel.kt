@@ -11,6 +11,9 @@ import com.example.nutriayunomx.background.FastingWorker
 import com.example.nutriayunomx.data.NutriRepository
 import com.example.nutriayunomx.data.local.Alimento
 import com.example.nutriayunomx.data.local.SesionAyuno
+import com.example.nutriayunomx.data.local.PerfilAjustes
+import com.example.nutriayunomx.data.local.RegistroComida
+import com.example.nutriayunomx.data.local.RegistroComidaConAlimento
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,6 +41,16 @@ class MainScreenViewModel(
         .map { it?.protocoloAyunoPreferido ?: "16:8" }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "16:8")
 
+    val perfilAjustes: StateFlow<PerfilAjustes?> = repository.getPerfilAjustes()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val todayFoodLogs: StateFlow<List<RegistroComidaConAlimento>> = repository.getRegistrosConAlimentoPorFecha(getTodayDateString())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val todayTotalProtein: StateFlow<Double> = repository.getProteinaTotalPorFecha(getTodayDateString())
+        .map { it ?: 0.0 }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
@@ -55,6 +68,44 @@ class MainScreenViewModel(
     fun onSearchQueryChanged(newQuery: String) {
         _searchQuery.value = newQuery
     }
+
+    private fun getTodayDateString(): String {
+        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+        return sdf.format(java.util.Date())
+    }
+
+    fun registrarComida(alimentoId: Long, cantidadPorciones: Double, proteinaPorPorcion: Double, momento: String) {
+        viewModelScope.launch {
+            val proteinaCalculada = cantidadPorciones * proteinaPorPorcion
+            val registro = RegistroComida(
+                alimentoId = alimentoId,
+                fecha = getTodayDateString(),
+                cantidadPorciones = cantidadPorciones,
+                proteinaCalculadaG = proteinaCalculada,
+                momento = momento
+            )
+            repository.insertRegistro(registro)
+        }
+    }
+
+    fun eliminarComida(id: Long) {
+        viewModelScope.launch {
+            repository.deleteRegistroPorId(id)
+        }
+    }
+
+    fun guardarAjustesPerfil(peso: Double?, metaProteina: Double, protocolo: String) {
+        viewModelScope.launch {
+            val actual = PerfilAjustes(
+                id = 1,
+                pesoKg = peso,
+                metaProteinaDiaria = metaProteina,
+                protocoloAyunoPreferido = protocolo
+            )
+            repository.savePerfilAjustes(actual)
+        }
+    }
+
 
 
     fun iniciarAyuno(horasObjetivo: Int, isTesting: Boolean = false) {
