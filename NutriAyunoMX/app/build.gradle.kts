@@ -9,7 +9,7 @@ android {
     namespace = "com.example.nutriayunomx"
     compileSdk = 36
     defaultConfig {
-        applicationId = "com.example.nutriayunomx"
+        applicationId = "com.rayakrosh.nutriayunomx"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
