@@ -34,8 +34,21 @@ class MainScreenViewModel(
     val activeSession: StateFlow<SesionAyuno?> = repository.getAyunoActivo()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    val history: StateFlow<List<SesionAyuno>> = repository.getHistorialAyunos()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val esPro: StateFlow<Boolean> = repository.getPerfilAjustes()
+        .map { it?.esPro ?: false }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    val history: StateFlow<List<SesionAyuno>> = kotlinx.coroutines.flow.combine(
+        repository.getHistorialAyunos(),
+        esPro
+    ) { list, pro ->
+        if (pro) {
+            list
+        } else {
+            val limitTime = System.currentTimeMillis() - (7 * 24 * 3600 * 1000L)
+            list.filter { it.inicio >= limitTime }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val preferredProtocol: StateFlow<String> = repository.getPerfilAjustes()
         .map { it?.protocoloAyunoPreferido ?: "16:8" }
@@ -137,6 +150,7 @@ class MainScreenViewModel(
         recordatorioProteinaHora: String
     ) {
         viewModelScope.launch {
+            val currentPro = perfilAjustes.value?.esPro ?: false
             val actual = PerfilAjustes(
                 id = 1,
                 pesoKg = peso,
@@ -145,12 +159,60 @@ class MainScreenViewModel(
                 recordatorioAyunoActivo = recordatorioAyunoActivo,
                 recordatorioAyunoHora = recordatorioAyunoHora,
                 recordatorioProteinaActivo = recordatorioProteinaActivo,
-                recordatorioProteinaHora = recordatorioProteinaHora
+                recordatorioProteinaHora = recordatorioProteinaHora,
+                esPro = currentPro
             )
             repository.savePerfilAjustes(actual)
 
             gestionarRecordatorioAyuno(recordatorioAyunoActivo, recordatorioAyunoHora)
             gestionarRecordatorioProteina(recordatorioProteinaActivo, recordatorioProteinaHora)
+        }
+    }
+
+    fun comprarPro() {
+        viewModelScope.launch {
+            val current = repository.getPerfilAjustes().firstOrNull() ?: PerfilAjustes(id = 1)
+            val updated = current.copy(esPro = true)
+            repository.savePerfilAjustes(updated)
+        }
+    }
+
+    fun restablecerPro() {
+        viewModelScope.launch {
+            val current = repository.getPerfilAjustes().firstOrNull() ?: PerfilAjustes(id = 1)
+            val updated = current.copy(esPro = false)
+            repository.savePerfilAjustes(updated)
+        }
+    }
+
+    fun exportarDatosACSV(onResult: (String) -> Unit) {
+        viewModelScope.launch {
+            val fastingList = repository.getHistorialAyunos().firstOrNull() ?: emptyList()
+            val foodList = repository.getTodosLosRegistrosConAlimento().firstOrNull() ?: emptyList()
+
+            val csv = StringBuilder()
+            
+            // Sección de Ayuno
+            csv.append("HISTORIAL DE AYUNOS\n")
+            csv.append("Fecha Inicio,Fecha Fin,Horas Objetivo,Completado\n")
+            val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale("es", "MX"))
+            for (f in fastingList) {
+                val inicioStr = sdf.format(java.util.Date(f.inicio))
+                val finStr = f.fin?.let { sdf.format(java.util.Date(it)) } ?: "Activo"
+                val completadoStr = if (f.completada) "Sí" else "No"
+                csv.append("\"$inicioStr\",\"$finStr\",${f.horasObjetivo},\"$completadoStr\"\n")
+            }
+            
+            csv.append("\n")
+            
+            // Sección de Comidas
+            csv.append("HISTORIAL DE COMIDAS REGISTRADAS\n")
+            csv.append("Fecha,Alimento,Momento,Porciones,Proteina (g)\n")
+            for (c in foodList) {
+                csv.append("\"${c.fecha}\",\"${c.alimentoNombre}\",\"${c.momento}\",${c.cantidadPorciones},${c.proteinaCalculadaG}\n")
+            }
+            
+            onResult(csv.toString())
         }
     }
 

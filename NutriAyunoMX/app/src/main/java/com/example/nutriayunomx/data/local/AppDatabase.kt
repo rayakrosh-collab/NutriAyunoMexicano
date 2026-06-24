@@ -12,7 +12,7 @@ import kotlinx.serialization.json.Json
 
 @Database(
     entities = [Alimento::class, RegistroComida::class, SesionAyuno::class, PerfilAjustes::class],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

@@ -14,5 +14,6 @@ data class PerfilAjustes(
     val recordatorioAyunoActivo: Boolean = false,
     val recordatorioAyunoHora: String = "20:00",
     val recordatorioProteinaActivo: Boolean = false,
-    val recordatorioProteinaHora: String = "21:00"
+    val recordatorioProteinaHora: String = "21:00",
+    val esPro: Boolean = false
 )

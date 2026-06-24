@@ -38,11 +38,19 @@ import com.example.nutriayunomx.data.local.Alimento
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.nativeCanvas
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.Date
 import androidx.compose.ui.res.stringResource
 import com.example.nutriayunomx.R
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.FileProvider
+import android.content.Intent
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.AdSize
+import com.google.android.gms.ads.AdView
+import com.google.android.gms.ads.MobileAds
 
 @Composable
 fun MainScreen(
@@ -57,6 +65,8 @@ fun MainScreen(
         )
     }
 
+    val esPro by viewModel.esPro.collectAsStateWithLifecycle()
+    var showUpgradeDialog by remember { mutableStateOf(false) }
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
 
     // Solicitar permiso de notificaciones (Android 13+)
@@ -110,25 +120,46 @@ fun MainScreen(
             }
         }
     ) { innerPadding ->
-        Box(
+        Column(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
         ) {
-            when (selectedTab) {
-                0 -> FastingTabContent(viewModel = viewModel)
-                1 -> FoodSearchTabContent(viewModel = viewModel)
-                2 -> SettingsTabContent(viewModel = viewModel)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            ) {
+                when (selectedTab) {
+                    0 -> FastingTabContent(viewModel = viewModel, onUpgradeRequest = { showUpgradeDialog = true })
+                    1 -> FoodSearchTabContent(viewModel = viewModel, onUpgradeRequest = { showUpgradeDialog = true })
+                    2 -> SettingsTabContent(viewModel = viewModel, onUpgradeRequest = { showUpgradeDialog = true })
+                }
+            }
+            if (!esPro) {
+                AdMobBanner()
             }
         }
+    }
+
+    if (showUpgradeDialog) {
+        UpgradeProDialog(
+            onDismiss = { showUpgradeDialog = false },
+            onConfirmPurchase = {
+                viewModel.comprarPro()
+                showUpgradeDialog = false
+            }
+        )
     }
 }
 
 @Composable
 fun FastingTabContent(
     viewModel: MainScreenViewModel,
+    onUpgradeRequest: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val esPro by viewModel.esPro.collectAsStateWithLifecycle()
     val activeSession by viewModel.activeSession.collectAsStateWithLifecycle()
     val history by viewModel.history.collectAsStateWithLifecycle()
     val preferredProtocol by viewModel.preferredProtocol.collectAsStateWithLifecycle()
@@ -170,6 +201,8 @@ fun FastingTabContent(
             } else {
                 StartFastingCard(
                     defaultProtocol = preferredProtocol,
+                    esPro = esPro,
+                    onUpgradeRequest = onUpgradeRequest,
                     onStart = { hours, isTesting ->
                         viewModel.iniciarAyuno(hours, isTesting)
                     }
@@ -423,10 +456,12 @@ fun FoodLogItemRow(
 @Composable
 fun FoodSearchTabContent(
     viewModel: MainScreenViewModel,
+    onUpgradeRequest: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val searchResults by viewModel.searchResults.collectAsStateWithLifecycle()
+    val esPro by viewModel.esPro.collectAsStateWithLifecycle()
     var selectedAlimento by remember { mutableStateOf<Alimento?>(null) }
 
     Column(
@@ -515,9 +550,18 @@ fun FoodSearchTabContent(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(searchResults, key = { it.id }) { alimento ->
+                    val esPremium = alimento.id > 30
+                    val estaBloqueado = esPremium && !esPro
                     AlimentoItemCard(
                         alimento = alimento,
-                        onClick = { selectedAlimento = alimento }
+                        esPro = esPro,
+                        onClick = {
+                            if (estaBloqueado) {
+                                onUpgradeRequest()
+                            } else {
+                                selectedAlimento = alimento
+                            }
+                        }
                     )
                 }
             }
@@ -545,10 +589,12 @@ fun FoodSearchTabContent(
 @Composable
 fun SettingsTabContent(
     viewModel: MainScreenViewModel,
+    onUpgradeRequest: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val perfil by viewModel.perfilAjustes.collectAsStateWithLifecycle()
+    val esPro by viewModel.esPro.collectAsStateWithLifecycle()
     
     var pesoInput by remember { mutableStateOf("") }
     var metaProteina by remember { mutableFloatStateOf(80f) }
@@ -906,6 +952,71 @@ fun SettingsTabContent(
             }
         }
 
+        // Sección Premium
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.premium_section_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    Text(
+                        text = if (esPro) stringResource(R.string.premium_status_pro) else stringResource(R.string.premium_status_free),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (esPro) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    if (!esPro) {
+                        Button(
+                            onClick = onUpgradeRequest,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(stringResource(R.string.btn_mejorar_pro), fontWeight = FontWeight.Bold)
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                onClick = {
+                                    viewModel.exportarDatosACSV { csvContent ->
+                                        shareCsvData(context, csvContent)
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(stringResource(R.string.btn_exportar_csv), fontWeight = FontWeight.Bold)
+                            }
+                            
+                            OutlinedButton(
+                                onClick = { viewModel.restablecerPro() },
+                                modifier = Modifier.weight(1.5f),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(stringResource(R.string.btn_restablecer_pro), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // Botón Guardar
         item {
             Button(
@@ -936,6 +1047,7 @@ fun SettingsTabContent(
 @Composable
 fun AlimentoItemCard(
     alimento: Alimento,
+    esPro: Boolean,
     onClick: () -> Unit
 ) {
     Card(
@@ -960,11 +1072,13 @@ fun AlimentoItemCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
+                    val esPremium = alimento.id > 30
+                    val estaBloqueado = esPremium && !esPro
                     Text(
-                        text = alimento.nombre,
+                        text = if (estaBloqueado) "${alimento.nombre} 🔒" else alimento.nombre,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = if (estaBloqueado) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurface
                     )
                     if (alimento.origen.equals("mexicano", ignoreCase = true) || alimento.origen.equals("latino", ignoreCase = true)) {
                         Text("🇲🇽", fontSize = 14.sp)
@@ -1375,6 +1489,8 @@ fun ActiveTimerCard(
 @Composable
 fun StartFastingCard(
     defaultProtocol: String,
+    esPro: Boolean,
+    onUpgradeRequest: () -> Unit,
     onStart: (Int, Boolean) -> Unit
 ) {
     var selectedHours by remember { mutableStateOf(16) }
@@ -1382,11 +1498,11 @@ fun StartFastingCard(
     var isTestingMode by remember { mutableStateOf(false) }
 
     // Parsear el protocolo por defecto (ej: "16:8" -> 16)
-    LaunchedEffect(defaultProtocol) {
+    LaunchedEffect(defaultProtocol, esPro) {
         val parsedHours = defaultProtocol.split(":").firstOrNull()?.toIntOrNull()
         if (parsedHours != null) {
             selectedHours = parsedHours
-            isCustom = parsedHours != 16 && parsedHours != 18 && parsedHours != 20
+            isCustom = parsedHours != 16 && parsedHours != 18 && parsedHours != 20 && esPro
         }
     }
 
@@ -1434,7 +1550,13 @@ fun StartFastingCard(
                 }
 
                 Button(
-                    onClick = { isCustom = true },
+                    onClick = {
+                        if (esPro) {
+                            isCustom = true
+                        } else {
+                            onUpgradeRequest()
+                        }
+                    },
                     modifier = Modifier.weight(1.2f),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (isCustom) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
@@ -1936,6 +2058,169 @@ fun WeeklyFastingChart(
                 }
             }
         }
+    }
+}
+
+// ==========================================
+// Fase 8: Componentes de Monetización y Pro
+// ==========================================
+
+@Composable
+fun AdMobBanner(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        try {
+            MobileAds.initialize(context) {}
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center
+    ) {
+        AndroidView(
+            factory = { ctx ->
+                try {
+                    AdView(ctx).apply {
+                        setAdSize(AdSize.BANNER)
+                        // ID de banner de prueba oficial de Google
+                        adUnitId = "ca-app-pub-3940256099942544/6300978111"
+                        val adRequest = AdRequest.Builder().build()
+                        loadAd(adRequest)
+                    }
+                } catch (e: Exception) {
+                    // Fallback visual en Compose en caso de error
+                    android.widget.TextView(ctx).apply {
+                        text = "Anuncio de Prueba AdMob"
+                        gravity = android.view.Gravity.CENTER
+                        setTextColor(android.graphics.Color.GRAY)
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+}
+
+@Composable
+fun UpgradeProDialog(
+    onDismiss: () -> Unit,
+    onConfirmPurchase: () -> Unit
+) {
+    var isProcessing by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    AlertDialog(
+        onDismissRequest = { if (!isProcessing) onDismiss() },
+        title = {
+            Text(
+                text = stringResource(R.string.upgrade_pro_dialog_title),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = stringResource(R.string.upgrade_pro_dialog_desc),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                
+                Text(
+                    text = stringResource(R.string.upgrade_pro_price),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf(
+                        R.string.upgrade_pro_benefit_no_ads,
+                        R.string.upgrade_pro_benefit_custom,
+                        R.string.upgrade_pro_benefit_foods,
+                        R.string.upgrade_pro_benefit_history,
+                        R.string.upgrade_pro_benefit_export
+                    ).forEach { stringRes ->
+                        Text(
+                            text = stringResource(stringRes),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+
+                if (isProcessing) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    isProcessing = true
+                    scope.launch {
+                        delay(1200L)
+                        isProcessing = false
+                        onConfirmPurchase()
+                        android.widget.Toast.makeText(context, context.getString(R.string.purchase_success), android.widget.Toast.LENGTH_LONG).show()
+                    }
+                },
+                enabled = !isProcessing,
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) {
+                Text(stringResource(R.string.btn_comprar_pro), fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                enabled = !isProcessing
+            ) {
+                Text(stringResource(R.string.btn_cancelar))
+            }
+        },
+        shape = RoundedCornerShape(28.dp),
+        containerColor = MaterialTheme.colorScheme.surface
+    )
+}
+
+fun shareCsvData(context: android.content.Context, csvContent: String) {
+    try {
+        val cacheFile = java.io.File(context.cacheDir, "NutriAyuno_Historial.csv")
+        cacheFile.writeText(csvContent)
+        
+        val uri = FileProvider.getUriForFile(
+            context,
+            "com.example.nutriayunomx.fileprovider",
+            cacheFile
+        )
+        
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/csv"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            putExtra(Intent.EXTRA_SUBJECT, "Historial NutriAyuno MX")
+            putExtra(Intent.EXTRA_TEXT, "Aquí tienes tu historial de ayuno y nutrición de NutriAyuno MX.")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        
+        context.startActivity(Intent.createChooser(intent, "Compartir Historial"))
+    } catch (e: Exception) {
+        e.printStackTrace()
+        android.widget.Toast.makeText(context, context.getString(R.string.export_error), android.widget.Toast.LENGTH_SHORT).show()
     }
 }
 

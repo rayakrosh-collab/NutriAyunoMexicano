@@ -96,4 +96,7 @@ dependencies {
 
   // Splash Screen API
   implementation(libs.androidx.core.splashscreen)
+
+  // AdMob Ads SDK
+  implementation(libs.google.play.services.ads)
 }

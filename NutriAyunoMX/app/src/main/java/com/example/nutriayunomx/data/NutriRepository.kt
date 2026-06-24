@@ -23,6 +23,7 @@ interface NutriRepository {
     // Registros Comida
     fun getRegistrosPorFecha(fecha: String): Flow<List<RegistroComida>>
     fun getRegistrosConAlimentoPorFecha(fecha: String): Flow<List<RegistroComidaConAlimento>>
+    fun getTodosLosRegistrosConAlimento(): Flow<List<RegistroComidaConAlimento>>
     suspend fun insertRegistro(registro: RegistroComida): Long
     suspend fun deleteRegistroPorId(id: Long)
     fun getProteinaTotalPorFecha(fecha: String): Flow<Double?>
@@ -60,6 +61,8 @@ class DefaultNutriRepository(
         registroComidaDao.getRegistrosPorFecha(fecha)
     override fun getRegistrosConAlimentoPorFecha(fecha: String): Flow<List<RegistroComidaConAlimento>> =
         registroComidaDao.getRegistrosConAlimentoPorFecha(fecha)
+    override fun getTodosLosRegistrosConAlimento(): Flow<List<RegistroComidaConAlimento>> =
+        registroComidaDao.getTodosLosRegistrosConAlimento()
     override suspend fun insertRegistro(registro: RegistroComida): Long =
         registroComidaDao.insertRegistro(registro)
     override suspend fun deleteRegistroPorId(id: Long) =

@@ -113,4 +113,31 @@
     <string name="notif_proteina_texto">Llevas %1$.1fg de tu meta de %2$.0fg. ¡Aún estás a tiempo de registrar tus alimentos!</string>
     <string name="notif_ayuno_completo_titulo">¡Objetivo de Ayuno Completado! ⏱️</string>
     <string name="notif_ayuno_completo_texto">¡Felicidades! Has completado tu ayuno de %1$d horas.</string>
+    <!-- Premium/Monetization Strings -->
+    <string name="premium_section_title">Versión Premium 👑</string>
+    <string name="premium_status_free">Plan Gratuito (Limitado)</string>
+    <string name="premium_status_pro">Premium Pro Activo (Acceso Completo) 👑</string>
+    <string name="btn_mejorar_pro">Mejorar a Pro 👑</string>
+    <string name="btn_restablecer_pro">Restablecer Prueba (Gratis)</string>
+    <string name="btn_exportar_csv">Exportar Historial (CSV) 📥</string>
+    
+    <string name="locked_custom_protocol_title">Protocolo Personalizado Pro 🔒</string>
+    <string name="locked_custom_protocol_desc">La opción de elegir horas de ayuno personalizadas es exclusiva de la versión Premium Pro.</string>
+    
+    <string name="locked_food_title">Alimento Premium Pro 🔒</string>
+    <string name="locked_food_desc">El alimento \"%1\$s\" es exclusivo del catálogo completo de la versión Premium Pro.</string>
+    
+    <string name="upgrade_pro_benefit_no_ads">✓ Sin anuncios de banner molestos</string>
+    <string name="upgrade_pro_benefit_custom">✓ Protocolos de ayuno personalizados</string>
+    <string name="upgrade_pro_benefit_foods">✓ Acceso al catálogo de 170+ alimentos</string>
+    <string name="upgrade_pro_benefit_history">✓ Historial ilimitado (más de 7 días)</string>
+    <string name="upgrade_pro_benefit_export">✓ Exportación de datos a CSV</string>
+    
+    <string name="upgrade_pro_dialog_title">Desbloquear Premium Pro 👑</string>
+    <string name="upgrade_pro_dialog_desc">Obtén acceso ilimitado a todas las herramientas de nutrición y ayuno por un pago único de:</string>
+    <string name="upgrade_pro_price">$129.00 MXN</string>
+    <string name="btn_comprar_pro">Confirmar Pago 💳</string>
+    <string name="purchase_success">¡Gracias por tu compra! NutriAyuno Pro está activo.</string>
+    <string name="export_success">Archivo CSV exportado y listo para compartir.</string>
+    <string name="export_error">Error al exportar los datos.</string>
 </resources>

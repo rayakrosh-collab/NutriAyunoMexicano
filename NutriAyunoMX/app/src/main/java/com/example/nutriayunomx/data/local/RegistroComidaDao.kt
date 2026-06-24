@@ -21,6 +21,15 @@ interface RegistroComidaDao {
     """)
     fun getRegistrosConAlimentoPorFecha(fecha: String): Flow<List<RegistroComidaConAlimento>>
 
+    @Query("""
+        SELECT r.id, r.alimentoId, r.fecha, r.cantidadPorciones, r.proteinaCalculadaG, r.momento, 
+               a.nombre AS alimentoNombre, a.porcionDescripcion 
+        FROM registro_comida r 
+        INNER JOIN alimento a ON r.alimentoId = a.id 
+        ORDER BY r.fecha DESC, r.id DESC
+    """)
+    fun getTodosLosRegistrosConAlimento(): Flow<List<RegistroComidaConAlimento>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRegistro(registro: RegistroComida): Long
 
