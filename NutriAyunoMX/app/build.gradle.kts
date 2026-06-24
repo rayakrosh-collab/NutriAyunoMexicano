@@ -93,4 +93,7 @@ dependencies {
 
   // WorkManager
   implementation(libs.androidx.work.runtime)
+
+  // Splash Screen API
+  implementation(libs.androidx.core.splashscreen)
 }

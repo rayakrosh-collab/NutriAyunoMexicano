@@ -41,10 +41,15 @@ class FastingWorker(
             }
         }
 
+        val text = String.format(
+            java.util.Locale("es", "MX"),
+            context.getString(R.string.notif_ayuno_completo_texto),
+            hours
+        )
         val builder = NotificationCompat.Builder(context, NutriAyunoApplication.CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-            .setContentTitle("¡Objetivo de Ayuno Completado! ⏱️")
-            .setContentText("¡Felicidades! Has completado tu ayuno de $hours horas.")
+            .setContentTitle(context.getString(R.string.notif_ayuno_completo_titulo))
+            .setContentText(text)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
 

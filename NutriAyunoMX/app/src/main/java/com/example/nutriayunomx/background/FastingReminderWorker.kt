@@ -61,8 +61,8 @@ class FastingReminderWorker(
 
         val builder = NotificationCompat.Builder(context, NutriAyunoApplication.CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-            .setContentTitle("¡Momento de iniciar tu ayuno! ⏱️")
-            .setContentText("Es hora de comenzar tu ventana de ayuno programada. ¡Vamos por esa meta!")
+            .setContentTitle(context.getString(com.example.nutriayunomx.R.string.notif_ayuno_titulo))
+            .setContentText(context.getString(com.example.nutriayunomx.R.string.notif_ayuno_texto))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
 

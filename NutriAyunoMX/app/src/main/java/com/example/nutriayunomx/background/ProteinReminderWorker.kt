@@ -67,14 +67,14 @@ class ProteinReminderWorker(
 
         val text = String.format(
             java.util.Locale("es", "MX"),
-            "Llevas %.1fg de tu meta de %.0fg. ¡Aún estás a tiempo de registrar tus alimentos!",
+            context.getString(com.example.nutriayunomx.R.string.notif_proteina_texto),
             current,
             target
         )
 
         val builder = NotificationCompat.Builder(context, NutriAyunoApplication.CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-            .setContentTitle("¡Registra tu proteína de hoy! 🥚")
+            .setContentTitle(context.getString(com.example.nutriayunomx.R.string.notif_proteina_titulo))
             .setContentText(text)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)

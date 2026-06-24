@@ -1,3 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">NutriAyuno MX</string>
+
+    <!-- Navigation Tabs -->
+    <string name="tab_ayuno">Ayuno</string>
+    <string name="tab_alimentos">Alimentos</string>
+    <string name="tab_ajustes">Ajustes</string>
+
+    <!-- Fasting Screen -->
+    <string name="iniciar_ayuno">Iniciar Ayuno</string>
+    <string name="terminar_ayuno">Terminar Ayuno</string>
+    <string name="modo_prueba">Modo de prueba rápido (1h = 1min)</string>
+    <string name="horas_objetivo">Horas objetivo: %1$d</string>
+    <string name="ayuno_activo">Ayuno Activo</string>
+    <string name="fin_estimado">Fin estimado: %1$s</string>
+    <string name="proteina_hoy">Proteína de Hoy</string>
+    <string name="meta_diaria">Meta diaria: %1$s</string>
+    <string name="diario_alimentos">Diario de Alimentos</string>
+    <string name="sin_alimentos_hoy">No has registrado alimentos hoy.</string>
+    <string name="historial_ayunos">Historial de Ayunos</string>
+    <string name="sin_ayunos">Aún no tienes ayunos registrados. ¡Comienza hoy!</string>
+    <string name="protocolo_label">Protocolo: %1$s</string>
+    <string name="completado">Completado</string>
+    <string name="incompleto">Incompleto</string>
+    <string name="racha_activa">Racha Activa</string>
+    <string name="dias_label">%1$d días</string>
+    <string name="progreso_meta">Progreso diario contra tu meta</string>
+    <string name="porcion_sing">1 porción</string>
+    <string name="porciones_cant">%1$.1f porciones</string>
+    <string name="inicio_label">Inicio</string>
+    <string name="fin_estimado_label">Fin Estimado</string>
+    <string name="iniciar_nuevo_ayuno">Iniciar Nuevo Ayuno</string>
+    <string name="personalizado">Personalizado</string>
+    <string name="horas_ayuno_label">Horas de ayuno:</string>
+    <string name="hrs_val">%1$d hrs</string>
+    <string name="modo_prueba_titulo">Modo de prueba rápido</string>
+    <string name="modo_prueba_desc">1 hora objetivo = 1 minuto para pruebas</string>
+    <string name="btn_comenzar_ayuno">▶️  Comenzar Ayuno</string>
+    <string name="horas_formato">%1$.1f horas</string>
+    <string name="minutos_formato">%1$.1f minutos</string>
+    <string name="ayuno_horas_titulo">Ayuno de %1$d horas</string>
+    <string name="duracion_label">Duración: %1$s</string>
+    <string name="racha_dia_sing">1 día completando ayuno</string>
+    <string name="racha_dias_plur">%1$d días consecutivos de ayuno</string>
+    <string name="meta_horas">Meta: %1$d hrs</string>
+
+    <!-- Food Screen -->
+    <string name="buscar_alimentos_hint">Buscar alimentos...</string>
+    <string name="sin_resultados">No se encontraron alimentos</string>
+    <string name="proteina_porcion">%1$.1fg proteína / porción</string>
+    <string name="origen_label">Origen: %1$s</string>
+    <string name="origen_mexico">México 🇲🇽</string>
+    <string name="origen_latino">Latinoamérica 🌎</string>
+    <string name="origen_generico">Genérico 🍽️</string>
+    <string name="buscar_alimentos_title">Buscar Alimentos 🌮</string>
+    <string name="buscar_alimentos_desc">Consulta el contenido de proteína de comida mexicana y latina.</string>
+    <string name="buscar_alimentos_placeholder">Ej. frijoles, taco, huevo, pollo...</string>
+    <string name="sin_resultados_sug">Intenta buscar con otra palabra clave como \'taco\', \'queso\' o \'frijol\'.</string>
+
+    <!-- Food Dialog -->
+    <string name="registrar_consumo">Registrar Consumo</string>
+    <string name="porciones">Porciones: %1$.1f</string>
+    <string name="momento_comida">Momento de comida</string>
+    <string name="desayuno">Desayuno</string>
+    <string name="comida">Comida</string>
+    <string name="cena">Cena</string>
+    <string name="colacion">Colación</string>
+    <string name="calorias">Calorías</string>
+    <string name="carbohidratos">Carbohidratos</string>
+    <string name="grasas">Grasas</string>
+    <string name="proteina">Proteína</string>
+    <string name="btn_cancelar">Cancelar</string>
+    <string name="btn_registrar">Registrar</string>
+    <string name="kcal_val">%1$d kcal</string>
+    <string name="g_val">%1$.1fg</string>
+    <string name="porcion_sugerida">Porción sugerida:</string>
+    <string name="cantidad_porciones">Cantidad de Porciones</string>
+    <string name="momento_dia">Momento del Día</string>
+    <string name="info_nutricional_calc">Información Nutricional (calculado)</string>
+
+    <!-- Settings Screen -->
+    <string name="peso_corporal">Peso Corporal (kg)</string>
+    <string name="meta_proteina_title">Meta de Proteína Diaria</string>
+    <string name="meta_proteina_desc">Fija tu objetivo de consumo de proteína diario.</string>
+    <string name="protocolo_preferido">Protocolo de Ayuno Preferido</string>
+    <string name="recordatorios_diarios">Recordatorios Diarios 🔔</string>
+    <string name="recordatorios_desc">Recibe notificaciones amables para mantener la consistencia con tus metas de ayuno y nutrición.</string>
+    <string name="recordatorio_ayuno">Recordatorio de Ayuno ⏱️</string>
+    <string name="recordatorio_proteina">Recordatorio de Proteína 🥚</string>
+    <string name="ajustar_hora_ayuno">⏱\u00A0 Ajustar Hora de Ayuno</string>
+    <string name="ajustar_hora_proteina">⏱\u00A0 Ajustar Hora de Proteína</string>
+    <string name="btn_guardar_ajustes">💾  Guardar Ajustes</string>
+    <string name="activo_a_las">Activo a las %1$s</string>
+    <string name="inactivo">Inactivo</string>
+    <string name="ajustes_guardados">¡Ajustes guardados correctamente!</string>
+    <string name="ajustes_perfil_title">Ajustes de Perfil ⚙️</string>
+    <string name="ajustes_perfil_desc">Personaliza tus metas diarias de proteína y tus preferencias de ayuno.</string>
+    <string name="peso_hint">Ej. 75</string>
+
+    <!-- Charts -->
+    <string name="proteina_semanal">Proteína Semanal</string>
+    <string name="consumo_ultimos_7_dias">Consumo diario de los últimos 7 días</string>
+    <string name="meta_g_label">%1$dg meta</string>
+    <string name="horas_ayuno_title">Horas de Ayuno</string>
+    <string name="ayunos_completados_7_dias">Ayunos completados en los últimos 7 días</string>
+    <string name="meta_h_label">%1$dh meta</string>
+
+    <!-- Notification Strings -->
+    <string name="notif_ayuno_titulo">¡Momento de iniciar tu ayuno! ⏱️</string>
+    <string name="notif_ayuno_texto">Es hora de comenzar tu ventana de ayuno programada. ¡Vamos por esa meta!</string>
+    <string name="notif_proteina_titulo">¡Registra tu proteína de hoy! 🥚</string>
+    <string name="notif_proteina_texto">Llevas %1$.1fg de tu meta de %2$.0fg. ¡Aún estás a tiempo de registrar tus alimentos!</string>
+    <string name="notif_ayuno_completo_titulo">¡Objetivo de Ayuno Completado! ⏱️</string>
+    <string name="notif_ayuno_completo_texto">¡Felicidades! Has completado tu ayuno de %1$d horas.</string>
 </resources>

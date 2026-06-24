@@ -39,8 +39,10 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.nativeCanvas
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
+import java.util.Date
+import androidx.compose.ui.res.stringResource
+import com.example.nutriayunomx.R
 
 @Composable
 fun MainScreen(
@@ -91,19 +93,19 @@ fun MainScreen(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
                     icon = { Text("⏱️", fontSize = 20.sp) },
-                    label = { Text("Ayuno") }
+                    label = { Text(stringResource(R.string.tab_ayuno)) }
                 )
                 NavigationBarItem(
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
                     icon = { Text("🌮", fontSize = 20.sp) },
-                    label = { Text("Alimentos") }
+                    label = { Text(stringResource(R.string.tab_alimentos)) }
                 )
                 NavigationBarItem(
                     selected = selectedTab == 2,
                     onClick = { selectedTab = 2 },
                     icon = { Text("⚙️", fontSize = 20.sp) },
-                    label = { Text("Ajustes") }
+                    label = { Text(stringResource(R.string.tab_ajustes)) }
                 )
             }
         }
@@ -150,7 +152,7 @@ fun FastingTabContent(
         // Título
         item {
             Text(
-                text = "NutriAyuno MX ⏱️",
+                text = stringResource(R.string.app_name) + " ⏱️",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
@@ -212,7 +214,7 @@ fun FastingTabContent(
         // Sección del Historial
         item {
             Text(
-                text = "Historial de Ayunos",
+                text = stringResource(R.string.historial_ayunos),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -226,7 +228,7 @@ fun FastingTabContent(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                 ) {
                     Text(
-                        text = "Aún no tienes ayunos registrados. ¡Comienza hoy!",
+                        text = stringResource(R.string.sin_ayunos),
                         modifier = Modifier.padding(24.dp),
                         style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.Center,
@@ -271,12 +273,12 @@ fun DailyProteinCard(
             ) {
                 Column {
                     Text(
-                        text = "Proteína de Hoy 🥚",
+                        text = stringResource(R.string.proteina_hoy) + " 🥚",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Progreso diario contra tu meta",
+                        text = stringResource(R.string.progreso_meta),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -297,7 +299,7 @@ fun DailyProteinCard(
                         )
                     }
                     Text(
-                        text = "${(progress * 100).toInt()}% completado",
+                        text = "${(progress * 100).toInt()}% " + stringResource(R.string.completado).lowercase(Locale.getDefault()),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = if (progress >= 1f) Color(0xFF2E7D32) else MaterialTheme.colorScheme.primary
@@ -318,7 +320,7 @@ fun DailyProteinCard(
 
             // Diario de comidas de hoy
             Text(
-                text = "Diario de Alimentos",
+                text = stringResource(R.string.diario_alimentos),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold
             )
@@ -333,7 +335,7 @@ fun DailyProteinCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No has registrado alimentos hoy. Busca alimentos en la pestaña de al lado para registrar tu consumo.",
+                        text = stringResource(R.string.sin_alimentos_hoy),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -389,7 +391,7 @@ fun FoodLogItemRow(
                     )
                 }
 
-                val portionText = if (log.cantidadPorciones == 1.0) "1 porción" else "${log.cantidadPorciones} porciones"
+                val portionText = if (log.cantidadPorciones == 1.0) stringResource(R.string.porcion_sing) else stringResource(R.string.porciones_cant, log.cantidadPorciones)
                 Text(
                     text = "$portionText (${log.porcionDescripcion})",
                     style = MaterialTheme.typography.labelSmall,
@@ -436,13 +438,13 @@ fun FoodSearchTabContent(
         // Título y subtítulo
         Column(modifier = Modifier.padding(vertical = 8.dp)) {
             Text(
-                text = "Buscar Alimentos 🌮",
+                text = stringResource(R.string.buscar_alimentos_title),
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = "Consulta el contenido de proteína de comida mexicana y latina.",
+                text = stringResource(R.string.buscar_alimentos_desc),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -453,7 +455,7 @@ fun FoodSearchTabContent(
             value = searchQuery,
             onValueChange = { viewModel.onSearchQueryChanged(it) },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Ej. frijoles, taco, huevo, pollo...") },
+            placeholder = { Text(stringResource(R.string.buscar_alimentos_placeholder)) },
             leadingIcon = { Text("🔍", fontSize = 18.sp, modifier = Modifier.padding(start = 8.dp)) },
             trailingIcon = {
                 if (searchQuery.isNotEmpty()) {
@@ -490,13 +492,13 @@ fun FoodSearchTabContent(
                     ) {
                         Text("🍽️", fontSize = 48.sp)
                         Text(
-                            text = "No se encontraron alimentos",
+                            text = stringResource(R.string.sin_resultados),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "Intenta buscar con otra palabra clave como 'taco', 'queso' o 'frijol'.",
+                            text = stringResource(R.string.sin_resultados_sug),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
@@ -612,13 +614,13 @@ fun SettingsTabContent(
         item {
             Column(modifier = Modifier.padding(vertical = 8.dp)) {
                 Text(
-                    text = "Ajustes de Perfil ⚙️",
+                    text = stringResource(R.string.ajustes_perfil_title),
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = "Personaliza tus metas diarias de proteína y tus preferencias de ayuno.",
+                    text = stringResource(R.string.ajustes_perfil_desc),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -640,7 +642,7 @@ fun SettingsTabContent(
                     ) {
                         Text("✅", fontSize = 18.sp)
                         Text(
-                            text = "Ajustes guardados correctamente.",
+                            text = stringResource(R.string.ajustes_guardados),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF2E7D32)
@@ -662,7 +664,7 @@ fun SettingsTabContent(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "Peso Corporal (kg)",
+                        text = stringResource(R.string.peso_corporal),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -670,7 +672,7 @@ fun SettingsTabContent(
                         value = pesoInput,
                         onValueChange = { pesoInput = it },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Ej. 75") },
+                        placeholder = { Text(stringResource(R.string.peso_hint)) },
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -698,7 +700,7 @@ fun SettingsTabContent(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Meta de Proteína Diaria",
+                            text = stringResource(R.string.meta_proteina_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -710,7 +712,7 @@ fun SettingsTabContent(
                         )
                     }
                     Text(
-                        text = "Fija tu objetivo de consumo de proteína diario.",
+                        text = stringResource(R.string.meta_proteina_desc),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -736,7 +738,7 @@ fun SettingsTabContent(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        text = "Protocolo de Ayuno Preferido",
+                        text = stringResource(R.string.protocolo_preferido),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -775,12 +777,12 @@ fun SettingsTabContent(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
-                        text = "Recordatorios Diarios 🔔",
+                        text = stringResource(R.string.recordatorios_diarios),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Recibe notificaciones amables para mantener la consistencia con tus metas de ayuno y nutrición.",
+                        text = stringResource(R.string.recordatorios_desc),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -795,12 +797,12 @@ fun SettingsTabContent(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Recordatorio de Ayuno ⏱️",
+                                text = stringResource(R.string.recordatorio_ayuno),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = if (recordatorioAyunoActivo) "Activo a las $recordatorioAyunoHora" else "Inactivo",
+                                text = if (recordatorioAyunoActivo) stringResource(R.string.activo_a_las, recordatorioAyunoHora) else stringResource(R.string.inactivo),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -839,7 +841,7 @@ fun SettingsTabContent(
                             },
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("🕒 Ajustar Hora de Ayuno")
+                            Text(stringResource(R.string.ajustar_hora_ayuno))
                         }
                     }
 
@@ -853,12 +855,12 @@ fun SettingsTabContent(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Recordatorio de Proteína 🥚",
+                                text = stringResource(R.string.recordatorio_proteina),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = if (recordatorioProteinaActivo) "Activo a las $recordatorioProteinaHora" else "Inactivo",
+                                text = if (recordatorioProteinaActivo) stringResource(R.string.activo_a_las, recordatorioProteinaHora) else stringResource(R.string.inactivo),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -897,7 +899,7 @@ fun SettingsTabContent(
                             },
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("🕒 Ajustar Hora de Proteína")
+                            Text(stringResource(R.string.ajustar_hora_proteina))
                         }
                     }
                 }
@@ -925,7 +927,7 @@ fun SettingsTabContent(
                     .height(50.dp),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("💾  Guardar Ajustes", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.btn_guardar_ajustes), fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -1008,7 +1010,7 @@ fun AlimentoItemCard(
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = "proteína",
+                    text = stringResource(R.string.proteina).lowercase(Locale.getDefault()),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1036,14 +1038,14 @@ fun AlimentoDetailDialog(
                 },
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Registrar comida", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.btn_registrar), fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
             TextButton(
                 onClick = onDismiss
             ) {
-                Text("Cancelar", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.btn_cancelar), fontWeight = FontWeight.Bold)
             }
         },
         title = {
@@ -1087,7 +1089,7 @@ fun AlimentoDetailDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Porción sugerida:",
+                        text = stringResource(R.string.porcion_sugerida),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium
                     )
@@ -1102,7 +1104,7 @@ fun AlimentoDetailDialog(
                 // Selección de Porciones
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "Cantidad de Porciones",
+                        text = stringResource(R.string.cantidad_porciones),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
@@ -1119,7 +1121,7 @@ fun AlimentoDetailDialog(
                             Text("➖", fontSize = 16.sp)
                         }
                         Text(
-                            text = String.format(Locale.getDefault(), "%.1f porciones", quantity),
+                            text = stringResource(R.string.porciones_cant, quantity),
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Bold
                         )
@@ -1132,7 +1134,7 @@ fun AlimentoDetailDialog(
                 // Selección de Momento de Comida
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "Momento del Día",
+                        text = stringResource(R.string.momento_dia),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
@@ -1169,7 +1171,7 @@ fun AlimentoDetailDialog(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "Información Nutricional (calculado)",
+                        text = stringResource(R.string.info_nutricional_calc),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
@@ -1179,14 +1181,14 @@ fun AlimentoDetailDialog(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         MacroCard(
-                            label = "Proteína",
+                            label = stringResource(R.string.proteina),
                             value = String.format(Locale.getDefault(), "%.1fg", alimento.proteinaG * factor),
                             color = MaterialTheme.colorScheme.primaryContainer,
                             textColor = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.weight(1f)
                         )
                         MacroCard(
-                            label = "Calorías",
+                            label = stringResource(R.string.calorias),
                             value = alimento.caloriasKcal?.let { String.format(Locale.getDefault(), "%d kcal", (it * factor).toInt()) } ?: "-",
                             color = MaterialTheme.colorScheme.secondaryContainer,
                             textColor = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -1199,14 +1201,14 @@ fun AlimentoDetailDialog(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         MacroCard(
-                            label = "Carbohidratos",
+                            label = stringResource(R.string.carbohidratos),
                             value = alimento.carbohidratosG?.let { String.format(Locale.getDefault(), "%.1fg", it * factor) } ?: "-",
                             color = MaterialTheme.colorScheme.tertiaryContainer,
                             textColor = MaterialTheme.colorScheme.onTertiaryContainer,
                             modifier = Modifier.weight(1f)
                         )
                         MacroCard(
-                            label = "Grasas",
+                            label = stringResource(R.string.grasas),
                             value = alimento.grasasG?.let { String.format(Locale.getDefault(), "%.1fg", it * factor) } ?: "-",
                             color = MaterialTheme.colorScheme.surfaceVariant,
                             textColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1297,7 +1299,7 @@ fun ActiveTimerCard(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "Ayuno Activo",
+                text = stringResource(R.string.ayuno_activo),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
@@ -1335,7 +1337,7 @@ fun ActiveTimerCard(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Meta: ${session.horasObjetivo} hrs",
+                        text = stringResource(R.string.meta_horas, session.horasObjetivo),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1348,11 +1350,11 @@ fun ActiveTimerCard(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Inicio", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.inicio_label), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(formatTime(session.inicio), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Fin Estimado", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.fin_estimado_label), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     val finEstimado = session.inicio + (session.horasObjetivo * 3600 * 1000L)
                     Text(formatTime(finEstimado), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                 }
@@ -1364,7 +1366,7 @@ fun ActiveTimerCard(
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Terminar Ayuno", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.terminar_ayuno), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -1401,7 +1403,7 @@ fun StartFastingCard(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "Iniciar Nuevo Ayuno",
+                text = stringResource(R.string.iniciar_nuevo_ayuno),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -1441,7 +1443,7 @@ fun StartFastingCard(
                     shape = RoundedCornerShape(12.dp),
                     contentPadding = PaddingValues(vertical = 12.dp)
                 ) {
-                    Text("Personalizado", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.personalizado), fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -1452,8 +1454,8 @@ fun StartFastingCard(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Horas de ayuno:", style = MaterialTheme.typography.bodyMedium)
-                        Text("$selectedHours hrs", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.horas_ayuno_label), style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(R.string.hrs_val, selectedHours), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                     }
                     Slider(
                         value = selectedHours.toFloat(),
@@ -1475,8 +1477,8 @@ fun StartFastingCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
-                    Text("Modo de prueba rápido", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-                    Text("1 meta horas = 1 minuto para testear", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.modo_prueba_titulo), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.modo_prueba_desc), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Switch(
                     checked = isTestingMode,
@@ -1489,7 +1491,7 @@ fun StartFastingCard(
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("▶️  Comenzar Ayuno", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.btn_comenzar_ayuno), fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -1506,9 +1508,9 @@ fun HistoryItemCard(
 
     // Formatear duración de forma legible
     val durationString = if (hoursVal >= 1.0) {
-        String.format("%.1f horas", hoursVal)
+        stringResource(R.string.horas_formato, hoursVal)
     } else {
-        String.format("%.1f minutos", minutesVal)
+        stringResource(R.string.minutos_formato, minutesVal)
     }
 
     Card(
@@ -1529,7 +1531,7 @@ fun HistoryItemCard(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = "Ayuno de ${session.horasObjetivo} horas",
+                    text = stringResource(R.string.ayuno_horas_titulo, session.horasObjetivo),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -1545,7 +1547,7 @@ fun HistoryItemCard(
                     modifier = Modifier.padding(top = 4.dp)
                 ) {
                     Text(
-                        text = "Duración: $durationString",
+                        text = stringResource(R.string.duracion_label, durationString),
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Medium
                     )
@@ -1553,7 +1555,7 @@ fun HistoryItemCard(
                     // Badge de completado
                     val containerColor = if (session.completada) Color(0xFFE8F5E9) else Color(0xFFFFEBEE)
                     val contentColor = if (session.completada) Color(0xFF2E7D32) else Color(0xFFC62828)
-                    val label = if (session.completada) "Completado" else "Incompleto"
+                    val label = if (session.completada) stringResource(R.string.completado) else stringResource(R.string.incompleto)
                     
                     Box(
                         modifier = Modifier
@@ -1642,12 +1644,12 @@ fun FastingStreakCard(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Racha Activa",
+                    text = stringResource(R.string.racha_activa),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = if (streak == 1) "1 día completando ayuno" else "$streak días consecutivos de ayuno",
+                    text = if (streak == 1) stringResource(R.string.racha_dia_sing) else stringResource(R.string.racha_dias_plur, streak),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1682,6 +1684,7 @@ fun WeeklyProteinChart(
 ) {
     val maxVal = maxOf(proteinGoal, weeklyProteinData.maxOfOrNull { it.totalProteina } ?: 0.0)
     val displayMax = if (maxVal > 0.0) maxVal * 1.2 else 100.0
+    val goalLabel = stringResource(R.string.meta_g_label, proteinGoal.toInt())
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -1695,12 +1698,12 @@ fun WeeklyProteinChart(
         ) {
             Column {
                 Text(
-                    text = "Proteína Semanal 📊",
+                    text = stringResource(R.string.proteina_semanal) + " 📊",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Consumo diario de los últimos 7 días",
+                    text = stringResource(R.string.consumo_ultimos_7_dias),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1739,7 +1742,7 @@ fun WeeklyProteinChart(
 
                     // Draw goal text
                     drawContext.canvas.nativeCanvas.drawText(
-                        "${proteinGoal.toInt()}g meta",
+                        goalLabel,
                         10.dp.toPx(),
                         goalY + 4.dp.toPx(),
                         android.graphics.Paint().apply {
@@ -1815,6 +1818,7 @@ fun WeeklyFastingChart(
 ) {
     val maxVal = maxOf(targetHours, weeklyFastingData.maxOrNull() ?: 0.0)
     val displayMax = if (maxVal > 0.0) maxVal * 1.2 else 24.0
+    val goalLabel = stringResource(R.string.meta_h_label, targetHours.toInt())
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -1828,12 +1832,12 @@ fun WeeklyFastingChart(
         ) {
             Column {
                 Text(
-                    text = "Horas de Ayuno ⏱️",
+                    text = stringResource(R.string.horas_ayuno_title) + " ⏱️",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Ayunos completados en los últimos 7 días",
+                    text = stringResource(R.string.ayunos_completados_7_dias),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1870,7 +1874,7 @@ fun WeeklyFastingChart(
                     )
 
                     drawContext.canvas.nativeCanvas.drawText(
-                        "${targetHours.toInt()}h meta",
+                        goalLabel,
                         10.dp.toPx(),
                         goalY + 4.dp.toPx(),
                         android.graphics.Paint().apply {

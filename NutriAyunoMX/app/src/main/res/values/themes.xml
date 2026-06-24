@@ -2,4 +2,14 @@
 <resources>
 
     <style name="Theme.NutriAyunoMX" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- Tema para la pantalla de inicio (Splash) -->
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <!-- Fondo de la pantalla splash (Crema Orgánico) -->
+        <item name="windowSplashScreenBackground">#FAF9F6</item>
+        <!-- Icono central de la pantalla splash -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <!-- Tema al que cambiar cuando el splash finaliza -->
+        <item name="postSplashScreenTheme">@style/Theme.NutriAyunoMX</item>
+    </style>
 </resources>
