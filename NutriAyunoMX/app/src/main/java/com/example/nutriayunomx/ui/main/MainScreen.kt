@@ -545,18 +545,53 @@ fun SettingsTabContent(
     viewModel: MainScreenViewModel,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val perfil by viewModel.perfilAjustes.collectAsStateWithLifecycle()
     
     var pesoInput by remember { mutableStateOf("") }
     var metaProteina by remember { mutableFloatStateOf(80f) }
     var selectedProtocol by remember { mutableStateOf("16:8") }
+    var recordatorioAyunoActivo by remember { mutableStateOf(false) }
+    var recordatorioAyunoHora by remember { mutableStateOf("20:00") }
+    var recordatorioProteinaActivo by remember { mutableStateOf(false) }
+    var recordatorioProteinaHora by remember { mutableStateOf("21:00") }
     var showSuccessToast by remember { mutableStateOf(false) }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (!isGranted) {
+            recordatorioAyunoActivo = false
+            recordatorioProteinaActivo = false
+        }
+    }
+
+    fun showTimePicker(currentTime: String, onTimeSelected: (String) -> Unit) {
+        val parts = currentTime.split(":")
+        val hour = parts.getOrNull(0)?.toIntOrNull() ?: 12
+        val minute = parts.getOrNull(1)?.toIntOrNull() ?: 0
+
+        android.app.TimePickerDialog(
+            context,
+            { _, h, m ->
+                val formatted = String.format(java.util.Locale.US, "%02d:%02d", h, m)
+                onTimeSelected(formatted)
+            },
+            hour,
+            minute,
+            true
+        ).show()
+    }
 
     LaunchedEffect(perfil) {
         perfil?.let {
             pesoInput = it.pesoKg?.toString() ?: ""
             metaProteina = it.metaProteinaDiaria.toFloat()
             selectedProtocol = it.protocoloAyunoPreferido
+            recordatorioAyunoActivo = it.recordatorioAyunoActivo
+            recordatorioAyunoHora = it.recordatorioAyunoHora
+            recordatorioProteinaActivo = it.recordatorioProteinaActivo
+            recordatorioProteinaHora = it.recordatorioProteinaHora
         }
     }
 
@@ -728,12 +763,161 @@ fun SettingsTabContent(
             }
         }
 
+        // Recordatorios Diarios Card
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = "Recordatorios Diarios 🔔",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Recibe notificaciones amables para mantener la consistencia con tus metas de ayuno y nutrición.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
+
+                    // Recordatorio Ayuno
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Recordatorio de Ayuno ⏱️",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = if (recordatorioAyunoActivo) "Activo a las $recordatorioAyunoHora" else "Inactivo",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = recordatorioAyunoActivo,
+                            onCheckedChange = { checked ->
+                                if (checked) {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                        val permission = Manifest.permission.POST_NOTIFICATIONS
+                                        val isGranted = androidx.core.content.ContextCompat.checkSelfPermission(
+                                            context, permission
+                                        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                        if (isGranted) {
+                                            recordatorioAyunoActivo = true
+                                        } else {
+                                            permissionLauncher.launch(permission)
+                                            recordatorioAyunoActivo = true
+                                        }
+                                    } else {
+                                        recordatorioAyunoActivo = true
+                                    }
+                                } else {
+                                    recordatorioAyunoActivo = false
+                                }
+                            }
+                        )
+                    }
+
+                    if (recordatorioAyunoActivo) {
+                        OutlinedButton(
+                            onClick = {
+                                showTimePicker(recordatorioAyunoHora) { selectedTime ->
+                                    recordatorioAyunoHora = selectedTime
+                                }
+                            },
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("🕒 Ajustar Hora de Ayuno")
+                        }
+                    }
+
+                    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
+
+                    // Recordatorio Proteína
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Recordatorio de Proteína 🥚",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = if (recordatorioProteinaActivo) "Activo a las $recordatorioProteinaHora" else "Inactivo",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = recordatorioProteinaActivo,
+                            onCheckedChange = { checked ->
+                                if (checked) {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                        val permission = Manifest.permission.POST_NOTIFICATIONS
+                                        val isGranted = androidx.core.content.ContextCompat.checkSelfPermission(
+                                            context, permission
+                                        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                        if (isGranted) {
+                                            recordatorioProteinaActivo = true
+                                        } else {
+                                            permissionLauncher.launch(permission)
+                                            recordatorioProteinaActivo = true
+                                        }
+                                    } else {
+                                        recordatorioProteinaActivo = true
+                                    }
+                                } else {
+                                    recordatorioProteinaActivo = false
+                                }
+                            }
+                        )
+                    }
+
+                    if (recordatorioProteinaActivo) {
+                        OutlinedButton(
+                            onClick = {
+                                showTimePicker(recordatorioProteinaHora) { selectedTime ->
+                                    recordatorioProteinaHora = selectedTime
+                                }
+                            },
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("🕒 Ajustar Hora de Proteína")
+                        }
+                    }
+                }
+            }
+        }
+
         // Botón Guardar
         item {
             Button(
                 onClick = {
                     val pesoDouble = pesoInput.toDoubleOrNull()
-                    viewModel.guardarAjustesPerfil(pesoDouble, metaProteina.toDouble(), selectedProtocol)
+                    viewModel.guardarAjustesPerfil(
+                        peso = pesoDouble,
+                        metaProteina = metaProteina.toDouble(),
+                        protocolo = selectedProtocol,
+                        recordatorioAyunoActivo = recordatorioAyunoActivo,
+                        recordatorioAyunoHora = recordatorioAyunoHora,
+                        recordatorioProteinaActivo = recordatorioProteinaActivo,
+                        recordatorioProteinaHora = recordatorioProteinaHora
+                    )
                     showSuccessToast = true
                 },
                 modifier = Modifier

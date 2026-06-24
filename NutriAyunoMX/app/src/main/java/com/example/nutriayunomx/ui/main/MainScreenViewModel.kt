@@ -127,16 +127,90 @@ class MainScreenViewModel(
         }
     }
 
-    fun guardarAjustesPerfil(peso: Double?, metaProteina: Double, protocolo: String) {
+    fun guardarAjustesPerfil(
+        peso: Double?,
+        metaProteina: Double,
+        protocolo: String,
+        recordatorioAyunoActivo: Boolean,
+        recordatorioAyunoHora: String,
+        recordatorioProteinaActivo: Boolean,
+        recordatorioProteinaHora: String
+    ) {
         viewModelScope.launch {
             val actual = PerfilAjustes(
                 id = 1,
                 pesoKg = peso,
                 metaProteinaDiaria = metaProteina,
-                protocoloAyunoPreferido = protocolo
+                protocoloAyunoPreferido = protocolo,
+                recordatorioAyunoActivo = recordatorioAyunoActivo,
+                recordatorioAyunoHora = recordatorioAyunoHora,
+                recordatorioProteinaActivo = recordatorioProteinaActivo,
+                recordatorioProteinaHora = recordatorioProteinaHora
             )
             repository.savePerfilAjustes(actual)
+
+            gestionarRecordatorioAyuno(recordatorioAyunoActivo, recordatorioAyunoHora)
+            gestionarRecordatorioProteina(recordatorioProteinaActivo, recordatorioProteinaHora)
         }
+    }
+
+    private fun gestionarRecordatorioAyuno(activo: Boolean, hora: String) {
+        val workManager = WorkManager.getInstance(context)
+        if (activo) {
+            val delayMillis = calculateInitialDelay(hora)
+            val workRequest = OneTimeWorkRequestBuilder<com.example.nutriayunomx.background.FastingReminderWorker>()
+                .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
+                .addTag("fasting_reminder_tag")
+                .build()
+
+            workManager.enqueueUniqueWork(
+                "fasting_reminder",
+                ExistingWorkPolicy.REPLACE,
+                workRequest
+            )
+        } else {
+            workManager.cancelUniqueWork("fasting_reminder")
+        }
+    }
+
+    private fun gestionarRecordatorioProteina(activo: Boolean, hora: String) {
+        val workManager = WorkManager.getInstance(context)
+        if (activo) {
+            val delayMillis = calculateInitialDelay(hora)
+            val workRequest = OneTimeWorkRequestBuilder<com.example.nutriayunomx.background.ProteinReminderWorker>()
+                .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
+                .addTag("protein_reminder_tag")
+                .build()
+
+            workManager.enqueueUniqueWork(
+                "protein_reminder",
+                ExistingWorkPolicy.REPLACE,
+                workRequest
+            )
+        } else {
+            workManager.cancelUniqueWork("protein_reminder")
+        }
+    }
+
+    private fun calculateInitialDelay(targetTime: String): Long {
+        val parts = targetTime.split(":")
+        if (parts.size != 2) return 0L
+        val targetHour = parts[0].toIntOrNull() ?: return 0L
+        val targetMinute = parts[1].toIntOrNull() ?: return 0L
+
+        val now = java.util.Calendar.getInstance()
+        val target = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.HOUR_OF_DAY, targetHour)
+            set(java.util.Calendar.MINUTE, targetMinute)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }
+
+        if (target.before(now)) {
+            target.add(java.util.Calendar.DAY_OF_YEAR, 1)
+        }
+
+        return target.timeInMillis - now.timeInMillis
     }
 
 

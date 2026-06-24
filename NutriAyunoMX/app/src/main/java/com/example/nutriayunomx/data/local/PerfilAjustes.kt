@@ -10,5 +10,9 @@ data class PerfilAjustes(
     val pesoKg: Double? = null,
     val metaProteinaDiaria: Double = 80.0, // Default 80g
     val protocoloAyunoPreferido: String = "16:8",
-    val unidades: String = "métrico"
+    val unidades: String = "métrico",
+    val recordatorioAyunoActivo: Boolean = false,
+    val recordatorioAyunoHora: String = "20:00",
+    val recordatorioProteinaActivo: Boolean = false,
+    val recordatorioProteinaHora: String = "21:00"
 )

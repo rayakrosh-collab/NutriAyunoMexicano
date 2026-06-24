@@ -12,7 +12,7 @@ import kotlinx.serialization.json.Json
 
 @Database(
     entities = [Alimento::class, RegistroComida::class, SesionAyuno::class, PerfilAjustes::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -33,6 +33,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "nutriayuno_database"
                 )
+                .fallbackToDestructiveMigration()
                 .addCallback(DatabaseCallback(context.applicationContext))
                 .build()
                 INSTANCE = instance
